@@ -1,0 +1,12 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3001:3001"
+
+  web-app:
+    build: ./web-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import PokemonList from './PokemonList';
-import { Header } from './Header';
-import { useTheme } from './ThemeContext';
-import axios from 'axios';
+import axios from "axios";
+import React, { useState, useEffect } from "react";
 
-const API_URL = 'http://localhost:3001'
+import { Header } from "./Header";
+import PokemonList from "./PokemonList";
+import { useTheme } from "./ThemeContext";
+
+const API_URL = "http://localhost:3001";
 
 const PokemonApp: React.FC = () => {
   const [pokemonList, setPokemonList] = useState<any[]>([]);
@@ -12,9 +13,9 @@ const PokemonApp: React.FC = () => {
 
   useEffect(() => {
     const getPokemon = async () => {
-            const response = await axios.get(`${API_URL}/pokemons/1`);
-			const pokemon = response.data.pokemon
-            setPokemonList([pokemon]);
+      const response = await axios.get(`${API_URL}/pokemons/1`);
+      const pokemon = response.data.pokemon;
+      setPokemonList([pokemon]);
     };
 
     getPokemon();
@@ -22,16 +23,18 @@ const PokemonApp: React.FC = () => {
 
   if (!pokemonList.length) {
     return (
-      <div className="flex items-center h-screen">
-        <div className="text-lg text-center w-full">Loading Pokemons...</div>
+      <div className="flex h-screen items-center">
+        <div className="w-full text-center text-lg">Loading Pokemons...</div>
       </div>
     );
   }
 
   return (
-    <div className={`${theme === "light" ? "bg-amber-50" : "bg-slate-800"} flex flex-col items-center`}>
-      <Header/>
-      <PokemonList pokemons={pokemonList}/>
+    <div
+      className={`${theme === "light" ? "bg-amber-50" : "bg-slate-800"} flex flex-col items-center`}
+    >
+      <Header />
+      <PokemonList pokemons={pokemonList} />
     </div>
   );
 };
