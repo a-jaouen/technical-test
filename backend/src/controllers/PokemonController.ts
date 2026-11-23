@@ -62,7 +62,6 @@ export interface Pokemon {
 PokemonController.get("/:id", async (req: Request<{ id: string }>, res: Response) => {
   const { id } = req.params;
 
-  console.log("coucou");
   const pokemon = await fetchPokemon(id);
 
   return res.status(200).send({ pokemon });

@@ -6,6 +6,6 @@
     "verbatimModuleSyntax": true,
     "erasableSyntaxOnly": true,
     "skipLibCheck": true,
-    "strict": true,
+    "strict": true
   }
 }

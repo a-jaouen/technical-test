@@ -9,6 +9,9 @@ import type {
 
 const POKEAPI_URL = "https://pokeapi.co/api/v2";
 
+/** Without a timeout a single hung connection would block a request (or the whole export) forever */
+const api = axios.create({ timeout: 10_000 });
+
 interface NamedResource {
   name: string;
   url: string;
@@ -110,22 +113,33 @@ const findChainLink = (link: ApiChainLink, speciesName: string): ApiChainLink | 
     ? link
     : link.evolves_to.map((child) => findChainLink(child, speciesName)).find(Boolean);
 
+/** Types and evolution chains are small and shared by many pokemon: fetch each only once */
+const cache = new Map<string, Promise<unknown>>();
+const getCached = <T>(url: string): Promise<T> => {
+  if (!cache.has(url)) {
+    const request = api.get<T>(url).then((response) => response.data);
+    request.catch(() => cache.delete(url));
+    cache.set(url, request);
+  }
+  return cache.get(url) as Promise<T>;
+};
+
 /**
  * Fetch a pokemon from PokeAPI and adapt it to the legacy pokebuildapi `Pokemon` shape
  */
 export async function fetchPokemon(id: string): Promise<Pokemon> {
-  const { data: pokemon } = await axios.get<ApiPokemon>(`${POKEAPI_URL}/pokemon/${id}`);
+  const { data: pokemon } = await api.get<ApiPokemon>(`${POKEAPI_URL}/pokemon/${id}`);
 
   const [types, { data: species }] = await Promise.all([
     Promise.all(
       [...pokemon.types]
         .sort((a, b) => a.slot - b.slot)
-        .map(({ type }) => axios.get<ApiType>(type.url).then((r) => r.data)),
+        .map(({ type }) => getCached<ApiType>(type.url)),
     ),
-    axios.get<ApiSpecies>(pokemon.species.url),
+    api.get<ApiSpecies>(pokemon.species.url),
   ]);
 
-  const { data: evolutionChain } = await axios.get<ApiEvolutionChain>(species.evolution_chain.url);
+  const evolutionChain = await getCached<ApiEvolutionChain>(species.evolution_chain.url);
 
   const apiEvolutions: Evolution[] = (
     findChainLink(evolutionChain.chain, species.name)?.evolves_to ?? []
