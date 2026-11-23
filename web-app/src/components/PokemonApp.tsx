@@ -1,42 +1,95 @@
-import axios from "axios";
-import React, { useState, useEffect } from "react";
+import { useCallback, useMemo, useState } from "react";
 
+import { LoadStatus, usePokemons } from "../hooks/usePokemons";
+import type { TypeName } from "../types/pokemon";
+import { Arena } from "./Arena";
+import { Filters } from "./Filters";
 import { Header } from "./Header";
-import PokemonList from "./PokemonList";
-import { useTheme } from "./ThemeContext";
+import { PokemonList } from "./PokemonList";
+import { SelectionBar } from "./SelectionBar";
 
-const API_URL = "http://localhost:3001";
+const FIGHTERS_PER_BATTLE = 2;
 
-const PokemonApp: React.FC = () => {
-  const [pokemonList, setPokemonList] = useState<any[]>([]);
-  const { theme } = useTheme();
+export function PokemonApp() {
+  const { status, pokemons, total, error, retry } = usePokemons();
+  const [search, setSearch] = useState("");
+  const [selectedTypes, setSelectedTypes] = useState<TypeName[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [inArena, setInArena] = useState(false);
 
-  useEffect(() => {
-    const getPokemon = async () => {
-      const response = await axios.get(`${API_URL}/pokemons/1`);
-      const pokemon = response.data.pokemon;
-      setPokemonList([pokemon]);
-    };
+  const visible = useMemo(() => {
+    // Names are slugs ("mr-mime"): let "mr mime" match too
+    const query = search.trim().toLowerCase().replaceAll(" ", "-");
 
-    getPokemon();
-  }, []);
-
-  if (!pokemonList.length) {
-    return (
-      <div className="flex h-screen items-center">
-        <div className="w-full text-center text-lg">Loading Pokemons...</div>
-      </div>
+    return pokemons.filter(
+      (pokemon) =>
+        pokemon.name.includes(query) && selectedTypes.every((type) => pokemon.types.includes(type)),
     );
-  }
+  }, [pokemons, search, selectedTypes]);
+
+  const fighters = useMemo(
+    () => selectedIds.flatMap((id) => pokemons.find((pokemon) => pokemon.id === id) ?? []),
+    [pokemons, selectedIds],
+  );
+
+  const toggleType = (type: TypeName) =>
+    setSelectedTypes((current) =>
+      current.includes(type) ? current.filter((other) => other !== type) : [...current, type],
+    );
+
+  // Picking one more than a battle needs replaces the oldest pick
+  const toggleFighter = useCallback(
+    (id: number) =>
+      setSelectedIds((current) =>
+        current.includes(id)
+          ? current.filter((other) => other !== id)
+          : [...current, id].slice(-FIGHTERS_PER_BATTLE),
+      ),
+    [],
+  );
 
   return (
-    <div
-      className={`${theme === "light" ? "bg-amber-50" : "bg-slate-800"} flex flex-col items-center`}
-    >
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <Header />
-      <PokemonList pokemons={pokemonList} />
+      {pokemons.length > 0 && (
+        <Filters
+          search={search}
+          onSearchChange={setSearch}
+          selectedTypes={selectedTypes}
+          onToggleType={toggleType}
+          resultCount={visible.length}
+        />
+      )}
+      <main className="mx-auto flex max-w-7xl flex-col gap-3 p-4 pb-32 sm:pb-24">
+        {status === LoadStatus.Error ? (
+          <div role="alert" className="flex flex-wrap items-center gap-3">
+            <p>The Pokémon could not be loaded: {error}</p>
+            <button type="button" onClick={retry} className="rounded-md border px-3 py-1.5">
+              Try again
+            </button>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500 dark:text-slate-400" aria-live="polite">
+            {status === LoadStatus.Loading
+              ? `Loading Pokémon… ${total ? `${pokemons.length} / ${total}` : ""}`
+              : "Pick two Pokémon to send them into the arena."}
+          </p>
+        )}
+
+        {pokemons.length > 0 && (
+          <PokemonList pokemons={visible} selectedIds={selectedIds} onToggle={toggleFighter} />
+        )}
+      </main>
+
+      {fighters.length > 0 && (
+        <SelectionBar
+          fighters={fighters}
+          size={FIGHTERS_PER_BATTLE}
+          onClear={() => setSelectedIds([])}
+          onBattle={() => setInArena(true)}
+        />
+      )}
+      {inArena && <Arena fighters={fighters} onClose={() => setInArena(false)} />}
     </div>
   );
-};
-
-export default PokemonApp;
+}

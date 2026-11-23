@@ -1,63 +1,39 @@
 import { type Request, type Response, Router } from "express";
 
-import { fetchPokemon } from "../services/pokeapi.ts";
+import { pageSchema, pokemonIdSchema } from "../schemas.ts";
+import { fetchPokemon, fetchPokemonPage } from "../services/pokeapi.ts";
+import { HttpError } from "../utils/HttpError.ts";
 
 const PokemonController = Router();
 
-export interface PokemonType {
-  name: string;
-  image: string;
-}
+/**
+ * Return a page of pokemon
+ * @openapi
+ * /pokemons:
+ *   get:
+ *     tags: [Pokemons]
+ *     summary: List the Pokémon, page by page
+ *     description: Light summaries for the grid, in Pokédex order. Read `total` to know when the last page is reached.
+ *     parameters:
+ *       - $ref: "#/components/parameters/Limit"
+ *       - $ref: "#/components/parameters/Offset"
+ *     responses:
+ *       200:
+ *         description: One page of Pokémon
+ *         content:
+ *           application/json:
+ *             schema: { $ref: "#/components/schemas/PokemonPage" }
+ *       400: { $ref: "#/components/responses/BadRequest" }
+ *       502: { $ref: "#/components/responses/BadGateway" }
+ */
+PokemonController.get("/", async (req: Request, res: Response) => {
+  const { error, value } = pageSchema.validate(req.query);
+  if (error) throw new HttpError(400, error.message);
 
-export interface StatBlock {
-  HP: number;
-  attack: number;
-  defense: number;
-  special_attack: number;
-  special_defense: number;
-  speed: number;
-}
+  const page = await fetchPokemonPage(value.offset, value.limit);
 
-export type DamageRelation =
-  | "neutral"
-  | "resistant"
-  | "twice_resistant"
-  | "vulnerable"
-  | "twice_vulnerable"
-  | "immune";
-
-export interface Resistance {
-  name: string;
-  damage_multiplier: number;
-  damage_relation: DamageRelation;
-}
-
-export interface Ability {
-  name: string;
-  slug: string;
-}
-
-export interface Evolution {
-  name: string;
-  pokedexId: number;
-}
-
-export interface Pokemon {
-  id: number;
-  pokedexId: number;
-  name: string;
-  image: string;
-  sprite: string;
-  slug: string;
-  stats: StatBlock;
-  apiTypes: PokemonType[];
-  apiGeneration: number;
-  apiResistances: Resistance[];
-  resistanceModifyingAbilitiesForApi: Ability;
-  apiEvolutions: Evolution[];
-  apiPreEvolution: string | "none";
-  apiResistancesWithAbilities: Resistance[];
-}
+  return res.status(200).send(page);
+});
 
 /**
  * Return a pokemon
@@ -67,14 +43,7 @@ export interface Pokemon {
  *     tags: [Pokemons]
  *     summary: Get a Pokémon
  *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         description: Pokédex id or slug
- *         schema: { type: string }
- *         examples:
- *           id: { value: "25" }
- *           slug: { value: pikachu }
+ *       - $ref: "#/components/parameters/PokemonId"
  *     responses:
  *       200:
  *         description: The Pokémon
@@ -84,64 +53,12 @@ export interface Pokemon {
  *               type: object
  *               properties:
  *                 pokemon: { $ref: "#/components/schemas/Pokemon" }
- * components:
- *   schemas:
- *     Resistance:
- *       type: object
- *       properties:
- *         name: { type: string, example: ground }
- *         damage_multiplier: { type: number, example: 2 }
- *         damage_relation:
- *           type: string
- *           enum: [neutral, resistant, twice_resistant, vulnerable, twice_vulnerable, immune]
- *     Pokemon:
- *       type: object
- *       properties:
- *         id: { type: integer, example: 25 }
- *         pokedexId: { type: integer, example: 25 }
- *         name: { type: string, example: pikachu }
- *         slug: { type: string, example: pikachu }
- *         image: { type: string, format: uri }
- *         sprite: { type: string, format: uri }
- *         stats:
- *           type: object
- *           properties:
- *             HP: { type: integer, example: 35 }
- *             attack: { type: integer, example: 55 }
- *             defense: { type: integer, example: 40 }
- *             special_attack: { type: integer, example: 50 }
- *             special_defense: { type: integer, example: 50 }
- *             speed: { type: integer, example: 90 }
- *         apiTypes:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               name: { type: string, example: electric }
- *               image: { type: string, format: uri }
- *         apiGeneration: { type: integer, example: 1 }
- *         apiResistances:
- *           type: array
- *           items: { $ref: "#/components/schemas/Resistance" }
- *         resistanceModifyingAbilitiesForApi:
- *           type: object
- *           properties:
- *             name: { type: string, example: static }
- *             slug: { type: string, example: static }
- *         apiEvolutions:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               name: { type: string, example: raichu }
- *               pokedexId: { type: integer, example: 26 }
- *         apiPreEvolution: { type: string, example: pichu, description: "`none` when there is no pre-evolution" }
- *         apiResistancesWithAbilities:
- *           type: array
- *           items: { $ref: "#/components/schemas/Resistance" }
+ *       400: { $ref: "#/components/responses/BadRequest" }
+ *       502: { $ref: "#/components/responses/BadGateway" }
  */
-PokemonController.get("/:id", async (req: Request<{ id: string }>, res: Response) => {
-  const { id } = req.params;
+PokemonController.get("/:id", async (req: Request, res: Response) => {
+  const { error, value: id } = pokemonIdSchema.validate(req.params.id);
+  if (error) throw new HttpError(400, error.message);
 
   const pokemon = await fetchPokemon(id);
 

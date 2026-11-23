@@ -12,7 +12,6 @@
 
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
-    "erasableSyntaxOnly": true,
     "moduleDetection": "force",
 
     "strict": true,

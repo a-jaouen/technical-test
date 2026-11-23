@@ -1,17 +1,22 @@
-import { useTheme } from "./ThemeContext";
-import ThemeSwitcher from "./ThemeSwitcher";
+import { IoIosMoon, IoIosSunny } from "react-icons/io";
+
+import { Theme, useTheme } from "./ThemeContext";
 
 export function Header() {
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
+  const nextTheme = theme === Theme.Light ? Theme.Dark : Theme.Light;
 
   return (
-    <div
-      className={`${theme === "light" ? "bg-amber-100 text-slate-700" : "bg-slate-800 text-white"} sticky top-0 z-10 flex w-full items-center justify-evenly p-7 shadow-lg`}
-    >
-      <div className="flex flex-col">
-        <h1 className="text-center text-7xl font-thin">PokeBattle</h1>
-        <ThemeSwitcher />
-      </div>
-    </div>
+    <header className="flex items-center justify-between border-b px-4 py-3">
+      <h1 className="text-2xl font-semibold">PokeBattle</h1>
+      <button
+        type="button"
+        onClick={toggleTheme}
+        aria-label={`Switch to ${nextTheme} mode`}
+        className="rounded-md border p-2 text-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+      >
+        {theme === Theme.Light ? <IoIosMoon /> : <IoIosSunny />}
+      </button>
+    </header>
   );
 }

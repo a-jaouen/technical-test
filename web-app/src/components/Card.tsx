@@ -1,98 +1,60 @@
-import { useCallback, useState } from "react";
+import { memo } from "react";
 
-import { useTheme } from "./ThemeContext";
+import type { PokemonSummary } from "../types/pokemon";
+import { label } from "../utils/pokemon";
+import { TypeBadge } from "./TypeBadge";
 
 interface CardProps {
-  pokemon: any;
+  pokemon: PokemonSummary;
+  selected: boolean;
+  onToggle: (id: number) => void;
 }
 
-function throttle<T extends (...args: any[]) => any>(
-  func: T,
-  delay: number = 100,
-): (...args: Parameters<T>) => void {
-  let lastCall = 0;
-  return (...args: Parameters<T>) => {
-    const now = new Date().getTime();
-    if (now - lastCall < delay) {
-      return;
-    }
-    lastCall = now;
-    return func(...args);
-  };
-}
+/** Memoised: typing in the search bar or picking a fighter must not re-render 898 cards */
+export const Card = memo(function Card({ pokemon, selected, onToggle }: CardProps) {
+  const { stats } = pokemon;
 
-export const MiniCard: React.FC<CardProps> = ({ pokemon }) => {
   return (
-    <div className="flex h-[40px] items-center rounded-2xl bg-amber-300 p-2">
-      <img src={pokemon.imageUrl} alt={pokemon.name} style={{ height: "100%" }} />
-      <div className="ml-2 text-center">{pokemon.name}</div>
-    </div>
-  );
-};
-
-const Card: React.FC<CardProps> = ({ pokemon }) => {
-  const { theme } = useTheme();
-  if (!pokemon) {
-    return null;
-  }
-  const [rotate, setRotate] = useState({ x: 0, y: 0 });
-
-  const onMouseMove = useCallback(
-    throttle((e: React.MouseEvent<HTMLDivElement>) => {
-      const card = e.currentTarget;
-      const box = card.getBoundingClientRect();
-      const x = e.clientX - box.left;
-      const y = e.clientY - box.top;
-      const centerX = box.width / 2;
-      const centerY = box.height / 2;
-      const rotateX = (y - centerY) / 10;
-      const rotateY = (centerX - x) / 10;
-
-      setRotate({ x: rotateX, y: rotateY });
-    }),
-    [],
-  );
-
-  const onMouseLeave = () => {
-    setRotate({ x: 0, y: 0 });
-  };
-  return (
-    <div
-      className={`w-[250px] rounded-2xl bg-linear-to-r from-amber-300 via-amber-100 to-amber-300 p-1 shadow-md outline-orange-400 hover:outline-dashed`}
-      onMouseMove={onMouseMove}
-      onMouseLeave={onMouseLeave}
-      style={{
-        transform: `perspective(1000px) rotateX(${rotate.x}deg) rotateY(${rotate.y}deg) scale3d(1, 1, 1)`,
-        transition: "all 400ms cubic-bezier(0.03, 0.98, 0.52, 0.99) 0s",
-      }}
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={() => onToggle(pokemon.id)}
+      className={`flex min-w-0 flex-col items-center gap-2 rounded-lg border-2 bg-white p-2 text-left hover:border-amber-400 sm:p-3 dark:bg-slate-800 ${
+        selected ? "border-amber-400 ring-2 ring-amber-400" : ""
+      }`}
     >
-      <div className={`rounded-2xl bg-linear-to-br from-black/10 via-white/70 to-black/10`}>
-        <div className="flex-col rounded-2xl p-4">
-          <div className="flex justify-between gap-3">
-            <div className="font-bold">{pokemon.name}</div>
-            <div>HP: {pokemon.stats.HP}</div>
-            {pokemon.apiTypes.map((type: { name: string; image: string }) => (
-              <img
-                className="self-end"
-                src={type.image}
-                alt={type.name}
-                style={{ width: "20px" }}
-              />
-            ))}
-          </div>
-          <img
-            className={`${theme === "light" ? "bg-white" : "bg-blue-950"} my-3 outline-2 outline-solid`}
-            src={pokemon.image}
-            alt={pokemon.name}
-            style={{ width: "auto" }}
-          />
-          <div>Attack: {pokemon.stats.attack}</div>
-          <div>Defense: {pokemon.stats.defense}</div>
-          <div>Speed: {pokemon.stats.speed}</div>
-        </div>
+      <div className="flex w-full items-baseline justify-between gap-2">
+        <span className="truncate font-semibold">{label(pokemon.name)}</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400">#{pokemon.id}</span>
       </div>
+      <img
+        src={pokemon.image}
+        alt=""
+        loading="lazy"
+        width={120}
+        height={120}
+        className="aspect-square h-auto w-full max-w-30"
+      />
+      <div className="flex flex-wrap justify-center gap-1">
+        {pokemon.types.map((type) => (
+          <TypeBadge key={type} type={type} />
+        ))}
+      </div>
+      <dl className="w-full text-sm">
+        <Stat name="HP" value={stats.HP} />
+        <Stat name="Attack" value={stats.attack} />
+        <Stat name="Defense" value={stats.defense} />
+        <Stat name="Speed" value={stats.speed} />
+      </dl>
+    </button>
+  );
+});
+
+function Stat({ name, value }: { name: string; value: number }) {
+  return (
+    <div className="flex justify-between gap-2">
+      <dt className="text-slate-500 dark:text-slate-400">{name}</dt>
+      <dd className="font-medium">{value}</dd>
     </div>
   );
-};
-
-export default Card;
+}

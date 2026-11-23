@@ -1,27 +1,7 @@
 @import "tailwindcss";
 
-@theme {
-  --animate-shimmer: shimmer 2s infinite;
-  --animate-typing: typing 1s steps(20);
-
-  @keyframes shimmer {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(100%);
-    }
-  }
-  @keyframes typing {
-    0% {
-      width: 0%;
-      visibility: hidden;
-    }
-    100% {
-      width: 100%;
-    }
-  }
-}
+/* `dark:` utilities follow the class set by ThemeProvider instead of the system setting */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /*
   The default border color has changed to `currentcolor` in Tailwind CSS v4,
@@ -37,6 +17,18 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
+    border-color: var(--color-slate-300, currentcolor);
+  }
+}
+
+@layer base {
+  .dark *,
+  .dark ::after,
+  .dark ::before {
+    border-color: var(--color-slate-700);
+  }
+
+  button:not(:disabled) {
+    cursor: pointer;
   }
 }

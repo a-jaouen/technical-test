@@ -1,3 +1,27 @@
+## 🚀 Running the project
+
+Requirements: Node.js 26 or later, or Docker.
+
+**With Node** (two terminals):
+
+```sh
+cd backend && npm install && npm run dev     # API on http://localhost:3001
+cd web-app && npm install && npm run dev     # App on http://localhost:5173
+```
+
+**With Docker**:
+
+```sh
+docker compose up --build                    # API on http://localhost:3001, app on http://localhost:8080
+```
+
+- The chatbot API key is read from `CHATBOT_API_KEY` in [backend/.env](backend/.env).
+- API documentation: <http://localhost:3001/docs>.
+- `GET http://localhost:3001/contents/all` exports the 898 Pokémon as Markdown into `backend/pokemons-ru/`. This is the folder to import into the brain.
+- More details in [backend/README.md](backend/README.md) and [web-app/README.md](web-app/README.md).
+
+---
+
 ## 🧪 Technical Test – Pokémon Application
 
 ### 🎯 Objective

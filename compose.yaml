@@ -1,6 +1,8 @@
 services:
   backend:
     build: ./backend
+    # The chatbot API key
+    env_file: ./backend/.env
     ports:
       - "3001:3001"
 

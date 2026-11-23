@@ -1,4 +1,4 @@
-import type { Pokemon } from "../controllers/PokemonController.ts";
+import type { Pokemon } from "../types/pokemon.ts";
 import { fetchPokemon } from "./pokeapi.ts";
 
 export interface MarkdownFile {
@@ -7,7 +7,7 @@ export interface MarkdownFile {
 }
 
 /** "mr-mime" -> "Mr Mime", "special_attack" -> "Special Attack" */
-const label = (slug: string): string =>
+export const label = (slug: string): string =>
   slug
     .split(/[-_]/)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -39,6 +39,17 @@ export function pokemonToMarkdown(pokemon: Pokemon): string {
       ["Stat", "Value"],
       Object.entries(pokemon.stats).map(([stat, value]) => [label(stat), value]),
     ),
+    "## Moves",
+    table(
+      ["Move", "Type", "Category", "Power", "Accuracy"],
+      pokemon.apiMoves.map((move) => [
+        label(move.name),
+        label(move.type),
+        label(move.category),
+        move.power,
+        move.accuracy === null ? "Never misses" : `${move.accuracy}%`,
+      ]),
+    ),
     "## Resistances",
     table(
       ["Attacking type", "Damage multiplier", "Relation"],
@@ -57,7 +68,7 @@ export function pokemonToMarkdown(pokemon: Pokemon): string {
  * Fetch a pokemon and build its Markdown file (e.g. `25-pikachu.md`)
  */
 export async function fetchPokemonMarkdown(pokedexId: number): Promise<MarkdownFile> {
-  const pokemon = await fetchPokemon(String(pokedexId));
+  const pokemon = await fetchPokemon(pokedexId);
 
   return {
     filename: `${pokemon.pokedexId}-${pokemon.slug}.md`,

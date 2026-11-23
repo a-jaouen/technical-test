@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/app.ts",
+    "dev": "tsx watch --env-file-if-exists=.env src/app.ts",
     "build": "rolldown -c",
-    "start": "node dist/app.js",
+    "start": "node --env-file-if-exists=.env dist/app.js",
     "lint": "tsc && oxlint",
     "lint:fix": "oxlint --fix",
     "format": "oxfmt",

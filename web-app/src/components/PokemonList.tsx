@@ -1,32 +1,27 @@
-import React from "react";
-
-import Card from "./Card";
-import { useTheme } from "./ThemeContext";
+import type { PokemonSummary } from "../types/pokemon";
+import { Card } from "./Card";
 
 interface PokemonListProps {
-  pokemons: any[];
+  pokemons: PokemonSummary[];
+  selectedIds: number[];
+  onToggle: (id: number) => void;
 }
 
-const PokemonList: React.FC<PokemonListProps> = ({ pokemons }) => {
-  const { theme } = useTheme();
-
+export function PokemonList({ pokemons, selectedIds, onToggle }: PokemonListProps) {
   if (pokemons.length === 0) {
-    return (
-      <div className="flex items-center">
-        <div className="w-full text-center text-lg">No Pokemon found</div>
-      </div>
-    );
+    return <p className="py-10 text-center">No Pokémon matches your search.</p>;
   }
 
   return (
-    <div
-      className={`grid grid-cols-4 place-items-center gap-10 p-4 ${theme === "light" ? "" : "bg-slate-800"}`}
-    >
-      {pokemons.map((p) => (
-        <Card pokemon={p} />
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:gap-3">
+      {pokemons.map((pokemon) => (
+        <Card
+          key={pokemon.id}
+          pokemon={pokemon}
+          selected={selectedIds.includes(pokemon.id)}
+          onToggle={onToggle}
+        />
       ))}
     </div>
   );
-};
-
-export default PokemonList;
+}
