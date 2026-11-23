@@ -16,8 +16,35 @@ const pokemonIdSchema = Joi.number().integer().min(1).max(POKEMON_COUNT).require
 
 /**
  * Save all pokemon as markdown in the pokemons-ru folder
- * @route GET /contents/all
- * @group Contents
+ * @openapi
+ * /contents/all:
+ *   get:
+ *     tags: [Contents]
+ *     summary: Export the 898 Pokémon as Markdown files
+ *     description: Writes one Markdown file per Pokémon into the local `pokemons-ru` folder.
+ *     responses:
+ *       200:
+ *         description: Every Pokémon was exported
+ *         content:
+ *           application/json:
+ *             schema: { $ref: "#/components/schemas/ExportResult" }
+ *       502:
+ *         description: Some Pokémon could not be fetched from PokeAPI, their ids are in `failed`
+ *         content:
+ *           application/json:
+ *             schema: { $ref: "#/components/schemas/ExportResult" }
+ * components:
+ *   schemas:
+ *     ExportResult:
+ *       type: object
+ *       properties:
+ *         folder: { type: string, example: /app/pokemons-ru }
+ *         exported: { type: integer, example: 898 }
+ *         failed: { type: array, items: { type: integer } }
+ *     Error:
+ *       type: object
+ *       properties:
+ *         error: { type: string }
  */
 ContentController.get("/all", async (_req: Request, res: Response) => {
   await mkdir(EXPORT_FOLDER, { recursive: true });
@@ -47,9 +74,28 @@ ContentController.get("/all", async (_req: Request, res: Response) => {
 
 /**
  * Return a pokemon as markdown
- * @route GET /contents/:pokemonId
- * @group Contents
- * @param {number} pokemonId.path.required - Pokedex ID (1 to 898)
+ * @openapi
+ * /contents/{pokemonId}:
+ *   get:
+ *     tags: [Contents]
+ *     summary: Download a Pokémon as a Markdown file
+ *     parameters:
+ *       - name: pokemonId
+ *         in: path
+ *         required: true
+ *         description: Pokédex id
+ *         schema: { type: integer, minimum: 1, maximum: 898, example: 25 }
+ *     responses:
+ *       200:
+ *         description: The Markdown file, sent as an attachment (e.g. `25-pikachu.md`)
+ *         content:
+ *           text/markdown:
+ *             schema: { type: string }
+ *       400:
+ *         description: The id is not an integer between 1 and 898
+ *         content:
+ *           application/json:
+ *             schema: { $ref: "#/components/schemas/Error" }
  */
 ContentController.get("/:pokemonId", async (req: Request, res: Response) => {
   const { error, value: pokemonId } = pokemonIdSchema.validate(req.params.pokemonId);
