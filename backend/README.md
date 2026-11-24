@@ -16,13 +16,13 @@ npm run dev        # tsx watch on src/app.ts, http://localhost:3001
 | `npm run lint`   | Type-check (TypeScript 7) and lint (oxlint)                 |
 | `npm run format` | Format (oxfmt), `format:check` to verify                    |
 
-| Route                          | What it does                                                    |
-| ------------------------------ | --------------------------------------------------------------- |
-| `GET /pokemons?limit=&offset=` | One page of light Pokémon summaries (100 at most per page)      |
-| `GET /pokemons/:id`            | One Pokémon in full, with its strongest moves                   |
-| `GET /contents/:id`            | One Pokémon as a Markdown file                                  |
-| `GET /contents/all`            | Export the 898 Markdown files into `pokemons-ru/`               |
-| `POST /battles`                | Battle between Pokémon, streamed from the Virtual Brain chatbot |
+| Route                          | What it does                                                      |
+| ------------------------------ | ----------------------------------------------------------------- |
+| `GET /pokemons?limit=&offset=` | One page of light Pokémon summaries (100 at most per page)        |
+| `GET /pokemons/:id`            | One Pokémon in full, with its strongest moves                     |
+| `GET /contents/:id`            | One Pokémon as a Markdown file                                    |
+| `GET /contents/all`            | Export the 898 Markdown files into `pokemons-ru/`                 |
+| `POST /battles`                | Battle between two teams, streamed from the Virtual Brain chatbot |
 
 Ids are Pokédex ids from 1 to 898. Every parameter and body is validated with Joi ([src/schemas.ts](src/schemas.ts)).
 

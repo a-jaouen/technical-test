@@ -12,7 +12,7 @@ interface ArenaProps {
 
 /** Full screen view of a battle: the fighters, then the commentary as the chatbot writes it */
 export function Arena({ fighters, onClose }: ArenaProps) {
-  const battle = useBattle(fighters.map(({ id }) => id));
+  const battle = useBattle(fighters.map(({ id }) => ({ pokemonIds: [id] })));
 
   return (
     <div

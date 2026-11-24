@@ -1,12 +1,14 @@
 import Joi from "joi";
 
 import { POKEMON_COUNT } from "./services/pokeapi.ts";
+import type { BattleRequest, BattleTeam } from "./types/pokemon.ts";
 import { HttpError } from "./utils/HttpError.ts";
 
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;
-export const MIN_FIGHTERS = 2;
-export const MAX_FIGHTERS = 6;
+export const TEAMS_PER_BATTLE = 2;
+/** Raise it to let several pokemon fight side by side */
+export const POKEMONS_PER_TEAM = 1;
 
 /** A pokedex id: only the 898 pokemon of generations 1 to 8 are served */
 export const pokemonIdSchema = Joi.number().integer().min(1).max(POKEMON_COUNT);
@@ -17,14 +19,16 @@ export const pageSchema = Joi.object<{ limit: number; offset: number }>({
   offset: Joi.number().integer().min(0).default(0),
 });
 
-/** Body of a battle request */
-export const battleSchema = Joi.object<{ pokemonIds: number[] }>({
-  pokemonIds: Joi.array()
-    .items(pokemonIdSchema)
-    .min(MIN_FIGHTERS)
-    .max(MAX_FIGHTERS)
-    .unique()
-    .required(),
+const teamSchema = Joi.object<BattleTeam>({
+  pokemonIds: Joi.array().items(pokemonIdSchema).length(POKEMONS_PER_TEAM).unique().required(),
+});
+
+const sharePokemon = (a: BattleTeam, b: BattleTeam): boolean =>
+  a.pokemonIds.some((id) => b.pokemonIds.includes(id));
+
+/** Body of a battle request: a pokemon fights only once, whatever its team */
+export const battleSchema = Joi.object<BattleRequest>({
+  teams: Joi.array().items(teamSchema).length(TEAMS_PER_BATTLE).unique(sharePokemon).required(),
 });
 
 /**

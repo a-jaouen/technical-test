@@ -1,8 +1,10 @@
 import axios, { isAxiosError } from "axios";
 
-import type { PokemonPage } from "./types/pokemon";
+import type { BattleRequest, BattleTeam, PokemonPage } from "./types/pokemon";
 
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:3001" });
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:3001",
+});
 
 /** The backend answers failures as `{ error: string }`: turn them into an Error with that message */
 async function toError(error: unknown): Promise<unknown> {
@@ -31,7 +33,10 @@ export async function getPokemonPage(
   limit: number,
   signal: AbortSignal,
 ): Promise<PokemonPage> {
-  const { data } = await api.get<PokemonPage>("/pokemons", { params: { offset, limit }, signal });
+  const { data } = await api.get<PokemonPage>("/pokemons", {
+    params: { offset, limit },
+    signal,
+  });
 
   return data;
 }
@@ -40,13 +45,13 @@ export async function getPokemonPage(
  * Start a battle and yield each piece of the commentary as the backend streams it
  */
 export async function* streamBattle(
-  pokemonIds: number[],
+  teams: BattleTeam[],
   signal: AbortSignal,
 ): AsyncGenerator<string> {
   // Only axios' fetch adapter can hand over the body while it is still arriving
   const { data } = await api.post<ReadableStream<Uint8Array<ArrayBuffer>>>(
     "/battles",
-    { pokemonIds },
+    { teams },
     { adapter: "fetch", responseType: "stream", signal },
   );
 

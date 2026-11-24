@@ -13,7 +13,7 @@ const BattleController = Router();
  * /battles:
  *   post:
  *     tags: [Battles]
- *     summary: Simulate a battle between Pokémon
+ *     summary: Simulate a battle between two teams of Pokémon
  *     description: Asks the Virtual Brain chatbot to narrate the battle and streams its answer as it is written.
  *     requestBody:
  *       required: true
@@ -30,7 +30,8 @@ const BattleController = Router();
  *       502: { $ref: "#/components/responses/BadGateway" }
  */
 BattleController.post("/", async (req: Request, res: Response) => {
-  const { pokemonIds } = validate(battleSchema, req.body);
+  const { teams } = validate(battleSchema, req.body);
+  const pokemonIds = teams.flatMap((team) => team.pokemonIds);
 
   // Stop asking the chatbot when the user leaves the arena before the end
   const abort = new AbortController();

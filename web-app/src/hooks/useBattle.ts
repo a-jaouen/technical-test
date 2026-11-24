@@ -1,6 +1,7 @@
 import { experimental_streamedQuery as streamedQuery, useQuery } from "@tanstack/react-query";
 
 import { streamBattle } from "../api";
+import type { BattleTeam } from "../types/pokemon";
 
 export enum BattleStatus {
   Streaming = "streaming",
@@ -18,13 +19,13 @@ interface Battle {
 }
 
 /**
- * Run a battle between the given pokemon and follow its commentary as it is streamed
+ * Run a battle between the given teams and follow its commentary as it is streamed
  */
-export function useBattle(pokemonIds: number[]): Battle {
+export function useBattle(teams: BattleTeam[]): Battle {
   const { data, error, isError, isFetching, refetch } = useQuery({
-    queryKey: ["battle", pokemonIds],
+    queryKey: ["battle", teams],
     queryFn: streamedQuery({
-      streamFn: ({ signal }) => streamBattle(pokemonIds, signal),
+      streamFn: ({ signal }) => streamBattle(teams, signal),
       reducer: (text: string, chunk: string) => text + chunk,
       initialValue: "",
     }),

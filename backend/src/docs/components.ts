@@ -1,4 +1,9 @@
-import { DEFAULT_PAGE_SIZE, MAX_FIGHTERS, MAX_PAGE_SIZE, MIN_FIGHTERS } from "../schemas.ts";
+import {
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE_SIZE,
+  POKEMONS_PER_TEAM,
+  TEAMS_PER_BATTLE,
+} from "../schemas.ts";
 import { POKEMON_COUNT } from "../services/pokeapi.ts";
 import { DamageRelation, MoveCategory, TypeName } from "../types/pokemon.ts";
 
@@ -153,17 +158,30 @@ export const components = {
         },
       },
     },
-    BattleRequest: {
+    BattleTeam: {
       type: "object",
       required: ["pokemonIds"],
       properties: {
         pokemonIds: {
           type: "array",
-          description: "Pokédex ids of the fighters, all different",
-          minItems: MIN_FIGHTERS,
-          maxItems: MAX_FIGHTERS,
+          description: "Pokédex ids of the team's pokemon",
+          minItems: POKEMONS_PER_TEAM,
+          maxItems: POKEMONS_PER_TEAM,
           items: { type: "integer", minimum: 1, maximum: POKEMON_COUNT },
-          example: [25, 6],
+        },
+      },
+    },
+    BattleRequest: {
+      type: "object",
+      required: ["teams"],
+      properties: {
+        teams: {
+          type: "array",
+          description: "The teams facing each other. A pokemon can only be in one team",
+          minItems: TEAMS_PER_BATTLE,
+          maxItems: TEAMS_PER_BATTLE,
+          items: { $ref: "#/components/schemas/BattleTeam" },
+          example: [{ pokemonIds: [25] }, { pokemonIds: [6] }],
         },
       },
     },

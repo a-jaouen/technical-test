@@ -118,3 +118,13 @@ export interface Pokemon {
   apiResistancesWithAbilities: Resistance[];
   apiMoves: Move[];
 }
+
+/** One side of a battle */
+export interface BattleTeam {
+  pokemonIds: number[];
+}
+
+/** Body of `POST /battles` */
+export interface BattleRequest {
+  teams: BattleTeam[];
+}
