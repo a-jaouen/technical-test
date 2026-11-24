@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "../schemas.ts";
+import { DEFAULT_PAGE_SIZE, MAX_FIGHTERS, MAX_PAGE_SIZE, MIN_FIGHTERS } from "../schemas.ts";
 import { POKEMON_COUNT } from "../services/pokeapi.ts";
 import { DamageRelation, MoveCategory, TypeName } from "../types/pokemon.ts";
 
@@ -150,6 +150,20 @@ export const components = {
           type: "array",
           description: "The strongest attacks learned by levelling up (6 at most)",
           items: ref("Move"),
+        },
+      },
+    },
+    BattleRequest: {
+      type: "object",
+      required: ["pokemonIds"],
+      properties: {
+        pokemonIds: {
+          type: "array",
+          description: "Pokédex ids of the fighters, all different",
+          minItems: MIN_FIGHTERS,
+          maxItems: MAX_FIGHTERS,
+          items: { type: "integer", minimum: 1, maximum: POKEMON_COUNT },
+          example: [25, 6],
         },
       },
     },

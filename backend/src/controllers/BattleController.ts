@@ -1,10 +1,9 @@
 import { type Request, type Response, Router } from "express";
 
-import { battleSchema } from "../schemas.ts";
+import { battleSchema, validate } from "../schemas.ts";
 import { buildBattlePrompt } from "../services/battle.ts";
 import { askChatbot } from "../services/chatbot.ts";
-import { fetchPokemon } from "../services/pokeapi.ts";
-import { HttpError } from "../utils/HttpError.ts";
+import { fetchPokemonCore } from "../services/pokeapi.ts";
 
 const BattleController = Router();
 
@@ -20,17 +19,7 @@ const BattleController = Router();
  *       required: true
  *       content:
  *         application/json:
- *           schema:
- *             type: object
- *             required: [pokemonIds]
- *             properties:
- *               pokemonIds:
- *                 type: array
- *                 description: Pokédex ids of the fighters, all different
- *                 minItems: 2
- *                 maxItems: 6
- *                 items: { type: integer, minimum: 1, maximum: 898 }
- *                 example: [25, 6]
+ *           schema: { $ref: "#/components/schemas/BattleRequest" }
  *     responses:
  *       200:
  *         description: The battle, streamed as plain text
@@ -41,17 +30,18 @@ const BattleController = Router();
  *       502: { $ref: "#/components/responses/BadGateway" }
  */
 BattleController.post("/", async (req: Request, res: Response) => {
-  const { error, value } = battleSchema.validate(req.body);
-  if (error) throw new HttpError(400, error.message);
-
-  const pokemonIds: number[] = value.pokemonIds;
-  const fighters = await Promise.all(pokemonIds.map((id) => fetchPokemon(id)));
+  const { pokemonIds } = validate(battleSchema, req.body);
 
   // Stop asking the chatbot when the user leaves the arena before the end
   const abort = new AbortController();
   res.on("close", () => abort.abort());
 
-  const answer = askChatbot(buildBattlePrompt(fighters), abort.signal);
+  const fighters = await Promise.all(pokemonIds.map((id) => fetchPokemonCore(id)));
+  // The user already left while the fighters were being fetched
+  if (abort.signal.aborted) return;
+
+  const names = fighters.map(({ name }) => name);
+  const answer = askChatbot(buildBattlePrompt(names), abort.signal);
 
   try {
     // Wait for the first chunk before committing to a 200: a chatbot failure can still be a JSON error

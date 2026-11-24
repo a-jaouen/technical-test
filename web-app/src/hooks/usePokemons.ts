@@ -28,8 +28,8 @@ interface Pokemons {
  * Load all the pokemon, one page after the other, so the first ones show up right away
  */
 export function usePokemons(): Pokemons {
-  const { data, error, hasNextPage, isFetchingNextPage, isError, fetchNextPage, refetch } =
-    useInfiniteQuery({
+  const { data, error, hasNextPage, isFetchingNextPage, fetchNextPage, refetch } = useInfiniteQuery(
+    {
       queryKey: ["pokemons"],
       queryFn: ({ pageParam, signal }) => getPokemonPage(pageParam, PAGE_SIZE, signal),
       initialPageParam: 0,
@@ -37,10 +37,11 @@ export function usePokemons(): Pokemons {
         const next = offset + pokemons.length;
         return pokemons.length > 0 && next < total ? next : undefined;
       },
-    });
+    },
+  );
 
-  // `isError` only covers the first page, a later page failing keeps the ones already loaded
-  const failed = error !== null;
+  // A later page failing keeps the ones already loaded, and its error until the retry has answered
+  const failed = error !== null && !isFetchingNextPage;
 
   // Keep going until the last page, without waiting for the user to scroll
   useEffect(() => {
@@ -57,7 +58,8 @@ export function usePokemons(): Pokemons {
     status,
     pokemons,
     total: data?.pages[0]?.total,
-    error: error?.message,
-    retry: () => void (isError ? refetch() : fetchNextPage()),
+    error: failed ? error.message : undefined,
+    // Resume from the failed page: `refetch` would load every page again
+    retry: () => void (data ? fetchNextPage() : refetch()),
   };
 }

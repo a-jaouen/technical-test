@@ -12,6 +12,7 @@ npm run dev        # tsx watch on src/app.ts, http://localhost:3001
 | `npm run dev`    | Run with hot reload (tsx)                                   |
 | `npm run build`  | Bundle server + deps into a single `dist/app.js` (Rolldown) |
 | `npm start`      | Run the bundle                                              |
+| `npm test`       | Unit tests (Vitest)                                         |
 | `npm run lint`   | Type-check (TypeScript 7) and lint (oxlint)                 |
 | `npm run format` | Format (oxfmt), `format:check` to verify                    |
 

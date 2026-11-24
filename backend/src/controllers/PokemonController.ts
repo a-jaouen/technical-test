@@ -1,8 +1,7 @@
 import { type Request, type Response, Router } from "express";
 
-import { pageSchema, pokemonIdSchema } from "../schemas.ts";
+import { pageSchema, pokemonIdSchema, validate } from "../schemas.ts";
 import { fetchPokemon, fetchPokemonPage } from "../services/pokeapi.ts";
-import { HttpError } from "../utils/HttpError.ts";
 
 const PokemonController = Router();
 
@@ -27,10 +26,8 @@ const PokemonController = Router();
  *       502: { $ref: "#/components/responses/BadGateway" }
  */
 PokemonController.get("/", async (req: Request, res: Response) => {
-  const { error, value } = pageSchema.validate(req.query);
-  if (error) throw new HttpError(400, error.message);
-
-  const page = await fetchPokemonPage(value.offset, value.limit);
+  const { offset, limit } = validate(pageSchema, req.query);
+  const page = await fetchPokemonPage(offset, limit);
 
   return res.status(200).send(page);
 });
@@ -57,9 +54,7 @@ PokemonController.get("/", async (req: Request, res: Response) => {
  *       502: { $ref: "#/components/responses/BadGateway" }
  */
 PokemonController.get("/:id", async (req: Request, res: Response) => {
-  const { error, value: id } = pokemonIdSchema.validate(req.params.id);
-  if (error) throw new HttpError(400, error.message);
-
+  const id = validate(pokemonIdSchema, req.params.id);
   const pokemon = await fetchPokemon(id);
 
   return res.status(200).send({ pokemon });

@@ -7,6 +7,7 @@
     "dev": "tsx watch --env-file-if-exists=.env src/app.ts",
     "build": "rolldown -c",
     "start": "node --env-file-if-exists=.env dist/app.js",
+    "test": "vitest run",
     "lint": "tsc && oxlint",
     "lint:fix": "oxlint --fix",
     "format": "oxfmt",
@@ -29,7 +30,8 @@
     "rolldown": "^1.3.3",
     "swagger-jsdoc": "^6.3.0",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.12"
   },
   "engines": {
     "node": ">=26"

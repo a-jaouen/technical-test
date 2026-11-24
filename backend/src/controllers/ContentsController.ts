@@ -3,16 +3,15 @@ import path from "node:path";
 
 import { type Request, type Response, Router } from "express";
 
-import { pokemonIdSchema } from "../schemas.ts";
+import { pokemonIdSchema, validate } from "../schemas.ts";
 import { fetchPokemonMarkdown } from "../services/markdown.ts";
-import { POKEMON_COUNT } from "../services/pokeapi.ts";
-import { HttpError } from "../utils/HttpError.ts";
+import { POKEMON_COUNT, pokemonIds } from "../services/pokeapi.ts";
 import { mapPool } from "../utils/mapPool.ts";
 
 const ContentController = Router();
 
 const EXPORT_FOLDER = path.resolve("pokemons-ru");
-const EXPORT_CONCURRENCY = 10;
+const EXPORT_CONCURRENCY = 20;
 
 /**
  * Save all pokemon as markdown in the pokemons-ru folder
@@ -37,9 +36,8 @@ const EXPORT_CONCURRENCY = 10;
 ContentController.get("/all", async (_req: Request, res: Response) => {
   await mkdir(EXPORT_FOLDER, { recursive: true });
 
-  // A few at a time, so PokeAPI only sees a handful of requests at once
-  const ids = Array.from({ length: POKEMON_COUNT }, (_, index) => index + 1);
-  const results = await mapPool(ids, EXPORT_CONCURRENCY, async (id) => {
+  // A few pokemon at a time: the export must not queue all 898 ahead of the other requests
+  const results = await mapPool(pokemonIds(), EXPORT_CONCURRENCY, async (id) => {
     try {
       const { filename, content } = await fetchPokemonMarkdown(id);
       await writeFile(path.join(EXPORT_FOLDER, filename), content);
@@ -76,9 +74,7 @@ ContentController.get("/all", async (_req: Request, res: Response) => {
  *       502: { $ref: "#/components/responses/BadGateway" }
  */
 ContentController.get("/:id", async (req: Request, res: Response) => {
-  const { error, value: id } = pokemonIdSchema.validate(req.params.id);
-  if (error) throw new HttpError(400, error.message);
-
+  const id = validate(pokemonIdSchema, req.params.id);
   const { filename, content } = await fetchPokemonMarkdown(id);
 
   return res.attachment(filename).type("text/markdown").send(content);

@@ -26,8 +26,13 @@ node_modules
 !.vscode/extensions.json
 .cursorrules
 
-# Env
-.env.scripts
+# Env (only backend/.env is committed, for the technical test)
+.env
+.env.*
+!backend/.env
+
+# macOS
+.DS_Store
 
 # Docker
 .docker

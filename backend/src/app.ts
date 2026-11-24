@@ -1,7 +1,6 @@
 import { createServer } from "node:http";
 
 import { apiReference } from "@scalar/express-api-reference";
-import axios from "axios";
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 
@@ -31,8 +30,8 @@ app.use(
 /**
  * Body parser
  */
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true }));
+// The only body is a handful of pokemon ids: the default limit (100 KB) is plenty
+app.use(express.json());
 
 /**
  * Routes
@@ -63,6 +62,11 @@ app.get("/openapi.json", (_req, res) => res.send(openapi));
 app.use("/docs", apiReference({ url: "/openapi.json", agent: { disabled: true } }));
 
 /**
+ * Unknown routes
+ */
+app.use((_req, res) => res.status(404).send({ error: "Not found" }));
+
+/**
  * Errors: every failure is answered as JSON, without leaking internals
  */
 app.use((error: unknown, _req: Request, res: Response, next: NextFunction) => {
@@ -72,10 +76,9 @@ app.use((error: unknown, _req: Request, res: Response, next: NextFunction) => {
   if (error instanceof HttpError) {
     return res.status(error.status).send({ error: error.message });
   }
-  if (axios.isAxiosError(error)) {
-    return error.response?.status === 404
-      ? res.status(404).send({ error: "Pokemon not found" })
-      : res.status(502).send({ error: "PokeAPI could not be reached" });
+  // Errors raised by the body parsers (malformed JSON, body too large) are the client's fault
+  if (error instanceof Error && "expose" in error && error.expose === true && "status" in error) {
+    return res.status(Number(error.status)).send({ error: error.message });
   }
 
   console.error(error);

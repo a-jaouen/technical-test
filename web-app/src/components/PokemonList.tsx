@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 import type { PokemonSummary } from "../types/pokemon";
 import { Card } from "./Card";
 
@@ -7,7 +9,12 @@ interface PokemonListProps {
   onToggle: (id: number) => void;
 }
 
-export function PokemonList({ pokemons, selectedIds, onToggle }: PokemonListProps) {
+/** Memoised: the 898 cards are only looked at again when the list or the selection changes */
+export const PokemonList = memo(function PokemonList({
+  pokemons,
+  selectedIds,
+  onToggle,
+}: PokemonListProps) {
   if (pokemons.length === 0) {
     return <p className="py-10 text-center">No Pokémon matches your search.</p>;
   }
@@ -24,4 +31,4 @@ export function PokemonList({ pokemons, selectedIds, onToggle }: PokemonListProp
       ))}
     </div>
   );
-}
+});
