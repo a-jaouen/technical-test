@@ -3,13 +3,18 @@ import { label } from "../utils/pokemon";
 
 interface SelectionBarProps {
   fighters: PokemonSummary[];
-  /** How many pokemon a battle needs */
   size: number;
   onClear: () => void;
   onBattle: () => void;
 }
 
-/** Bottom bar showing the picked pokemon and the button sending them to the arena */
+/**
+ * Bottom bar showing the picked pokemon and the button sending them to the arena
+ * @param props.fighters - Pokemon picked so far
+ * @param props.size - How many pokemon a battle needs
+ * @param props.onClear - Called to drop the picks
+ * @param props.onBattle - Called to start the battle
+ */
 export function SelectionBar({ fighters, size, onClear, onBattle }: SelectionBarProps) {
   const missing = size - fighters.length;
 

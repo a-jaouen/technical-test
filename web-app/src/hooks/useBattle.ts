@@ -10,16 +10,15 @@ export enum BattleStatus {
 }
 
 interface Battle {
-  /** The commentary received so far */
   text: string;
   status: BattleStatus;
   error?: string;
-  /** Play the battle again */
   restart: () => void;
 }
 
 /**
- * Run a battle between the given teams and follow its commentary as it is streamed
+ * Run a battle and follow its commentary as it is streamed
+ * @param teams - Teams fighting each other
  */
 export function useBattle(teams: BattleTeam[]): Battle {
   const { data, error, isError, isFetching, refetch } = useQuery({
@@ -29,7 +28,6 @@ export function useBattle(teams: BattleTeam[]): Battle {
       reducer: (text: string, chunk: string) => text + chunk,
       initialValue: "",
     }),
-    // Every visit to the arena is a new battle: nothing is kept once it is left
     gcTime: 0,
     retry: false,
   });

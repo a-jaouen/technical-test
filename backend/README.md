@@ -4,7 +4,7 @@ Express 5 + TypeScript (ESM), Node >= 26.
 
 ```sh
 npm install
-npm run dev        # tsx watch on src/app.ts, http://localhost:3001
+npm run dev        # tsx watch on src/server.ts, http://localhost:3001
 ```
 
 | Script           | What it does                                                |
@@ -12,7 +12,7 @@ npm run dev        # tsx watch on src/app.ts, http://localhost:3001
 | `npm run dev`    | Run with hot reload (tsx)                                   |
 | `npm run build`  | Bundle server + deps into a single `dist/app.js` (Rolldown) |
 | `npm start`      | Run the bundle                                              |
-| `npm test`       | Unit tests (Vitest)                                         |
+| `npm test`       | Unit and endpoint tests (Vitest), needs access to PokeAPI   |
 | `npm run lint`   | Type-check (TypeScript 7) and lint (oxlint)                 |
 | `npm run format` | Format (oxfmt), `format:check` to verify                    |
 
@@ -23,6 +23,8 @@ npm run dev        # tsx watch on src/app.ts, http://localhost:3001
 | `GET /contents/:id`            | One Pokémon as a Markdown file                                    |
 | `GET /contents/all`            | Export the 898 Markdown files into `pokemons-ru/`                 |
 | `POST /battles`                | Battle between two teams, streamed from the Virtual Brain chatbot |
+
+Endpoint tests call the app over HTTP. The chatbot is stubbed, but PokeAPI is still called for real: it should be mocked, so that the tests run offline and do not depend on its data.
 
 Ids are Pokédex ids from 1 to 898. Every parameter and body is validated with Joi ([src/schemas.ts](src/schemas.ts)).
 

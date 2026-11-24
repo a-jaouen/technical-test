@@ -1,18 +1,14 @@
 # syntax=docker/dockerfile:1
 
-# ---- Build: bundle the server and all its dependencies into one minified ESM file
 FROM node:26-alpine3.24 AS build
+RUN apk add --no-cache binutils && strip --strip-all /usr/local/bin/node
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY tsconfig.json rolldown.config.ts ./
 COPY src ./src
 RUN npm run build
-# Strip debug symbols from the node binary (~22 MB saved)
-RUN apk add --no-cache binutils && strip --strip-all /usr/local/bin/node
 
-# ---- Runtime: bare Alpine + the node binary only (no npm, yarn, corepack or node_modules)
-# Alpine release must match the build image, the node binary is linked against its musl/libstdc++
 FROM alpine:3.24
 RUN apk add --no-cache libstdc++ \
 	&& addgroup -S -g 1000 node \

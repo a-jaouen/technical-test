@@ -1,13 +1,15 @@
 import { TypeName } from "../types/pokemon";
 
-/** "mr-mime" -> "Mr Mime" */
+/**
+ * Turn a slug into a readable label: "mr-mime" -> "Mr Mime"
+ * @param slug - Words separated by dashes
+ */
 export const label = (slug: string): string =>
   slug
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 
-/** The usual colour of each type */
 export const TYPE_COLORS: Record<TypeName, string> = {
   [TypeName.Normal]: "#9099a1",
   [TypeName.Fire]: "#e8743b",
@@ -29,5 +31,4 @@ export const TYPE_COLORS: Record<TypeName, string> = {
   [TypeName.Fairy]: "#d86fc4",
 };
 
-/** The 18 types, in the order of the games */
 export const TYPES = Object.values(TypeName);

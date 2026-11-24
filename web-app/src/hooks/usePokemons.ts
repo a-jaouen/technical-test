@@ -1,11 +1,8 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 
 import { getPokemonPage } from "../api";
-import type { PokemonSummary } from "../types/pokemon";
-
-/** The largest page the backend accepts */
-const PAGE_SIZE = 100;
+import { MAX_PAGE_SIZE, type PokemonSummary } from "../types/pokemon";
 
 export enum LoadStatus {
   Loading = "loading",
@@ -15,12 +12,9 @@ export enum LoadStatus {
 
 interface Pokemons {
   status: LoadStatus;
-  /** The pokemon loaded so far, in pokedex order */
   pokemons: PokemonSummary[];
-  /** How many pokemon exist, known once the first page has arrived */
   total?: number;
   error?: string;
-  /** Resume loading after a failure */
   retry: () => void;
 }
 
@@ -31,7 +25,7 @@ export function usePokemons(): Pokemons {
   const { data, error, hasNextPage, isFetchingNextPage, fetchNextPage, refetch } = useInfiniteQuery(
     {
       queryKey: ["pokemons"],
-      queryFn: ({ pageParam, signal }) => getPokemonPage(pageParam, PAGE_SIZE, signal),
+      queryFn: ({ pageParam, signal }) => getPokemonPage(pageParam, MAX_PAGE_SIZE, signal),
       initialPageParam: 0,
       getNextPageParam: ({ offset, pokemons, total }) => {
         const next = offset + pokemons.length;
@@ -40,15 +34,13 @@ export function usePokemons(): Pokemons {
     },
   );
 
-  // A later page failing keeps the ones already loaded, and its error until the retry has answered
   const failed = error !== null && !isFetchingNextPage;
 
-  // Keep going until the last page, without waiting for the user to scroll
   useEffect(() => {
     if (hasNextPage && !isFetchingNextPage && !failed) void fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, failed, fetchNextPage]);
 
-  const pokemons = useMemo(() => data?.pages.flatMap((page) => page.pokemons) ?? [], [data]);
+  const pokemons = data?.pages.flatMap((page) => page.pokemons) ?? [];
 
   let status = LoadStatus.Loading;
   if (failed) status = LoadStatus.Error;
@@ -59,7 +51,6 @@ export function usePokemons(): Pokemons {
     pokemons,
     total: data?.pages[0]?.total,
     error: failed ? error.message : undefined,
-    // Resume from the failed page: `refetch` would load every page again
     retry: () => void (data ? fetchNextPage() : refetch()),
   };
 }

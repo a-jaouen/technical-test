@@ -23,13 +23,13 @@ const PokemonController = Router();
  *           application/json:
  *             schema: { $ref: "#/components/schemas/PokemonPage" }
  *       400: { $ref: "#/components/responses/BadRequest" }
- *       502: { $ref: "#/components/responses/BadGateway" }
+ *       500: { $ref: "#/components/responses/InternalError" }
  */
 PokemonController.get("/", async (req: Request, res: Response) => {
   const { offset, limit } = validate(pageSchema, req.query);
   const page = await fetchPokemonPage(offset, limit);
 
-  return res.status(200).send(page);
+  return res.send(page);
 });
 
 /**
@@ -51,13 +51,13 @@ PokemonController.get("/", async (req: Request, res: Response) => {
  *               properties:
  *                 pokemon: { $ref: "#/components/schemas/Pokemon" }
  *       400: { $ref: "#/components/responses/BadRequest" }
- *       502: { $ref: "#/components/responses/BadGateway" }
+ *       500: { $ref: "#/components/responses/InternalError" }
  */
 PokemonController.get("/:id", async (req: Request, res: Response) => {
   const id = validate(pokemonIdSchema, req.params.id);
   const pokemon = await fetchPokemon(id);
 
-  return res.status(200).send({ pokemon });
+  return res.send({ pokemon });
 });
 
 export { PokemonController };

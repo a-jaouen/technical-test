@@ -14,30 +14,22 @@ import {
   type StatBlock,
   TypeName,
 } from "../types/pokemon.ts";
-import { HttpError } from "../utils/HttpError.ts";
+import { toRequestError } from "../utils/helpers.ts";
 
 const POKEAPI_URL = "https://pokeapi.co/api/v2";
 
-/** Generations 1 to 8 */
 export const POKEMON_COUNT = 898;
-/** How many requests PokeAPI sees at once, whatever is being fetched (a pokemon alone has up to 100 moves) */
 const MAX_REQUESTS = 20;
-const MOVE_COUNT = 6;
-/** Keeps the selection varied: without it most pokemon would only list moves of their own type */
+export const MOVE_COUNT = 6;
 const MOVES_PER_TYPE = 3;
 
-/**
- * - `timeout`: without it a single hung connection would block a request (or the whole export) forever
- * - `maxSockets`: requests beyond `MAX_REQUESTS` wait for a free connection instead of flooding PokeAPI
- */
 const api = axios.create({
   timeout: 10_000,
   httpsAgent: new Agent({ keepAlive: true, maxSockets: MAX_REQUESTS }),
 });
 
-// Callers only need to know that PokeAPI failed, not how
-api.interceptors.response.use(undefined, () => {
-  throw new HttpError(502, "PokeAPI could not be reached");
+api.interceptors.response.use(undefined, (error: unknown) => {
+  throw toRequestError(error);
 });
 
 /* ------------------------- What PokeAPI answers -------------------------- */
@@ -99,11 +91,8 @@ interface PokemonCore {
   image: string;
   sprite: string;
   stats: StatBlock;
-  /** Main type first */
   types: NamedResource[];
-  /** PokeAPI has no "resistance modifying ability": best effort with the first ability */
   ability: string;
-  /** The moves learned by levelling up */
   moveUrls: string[];
   speciesUrl: string;
 }
@@ -127,12 +116,27 @@ interface EvolutionLink extends Evolution {
   evolvesTo: EvolutionLink[];
 }
 
-/** Extract the trailing id from a PokeAPI resource url (e.g. .../generation/1/) */
+/**
+ * Extract the trailing id of a PokeAPI resource url (e.g. .../generation/1/)
+ * @param url - Url of the resource
+ */
 const idFromUrl = (url: string): number => Number(url.split("/").filter(Boolean).pop());
 
+/**
+ * List the names of PokeAPI resources
+ * @param resources - Resources to name
+ */
 const names = (resources: NamedResource[]): string[] => resources.map(({ name }) => name);
 
+/**
+ * Keep what is needed of a PokeAPI pokemon, with only the moves learned by levelling up
+ * @param pokemon - Pokemon as answered by PokeAPI
+ */
 const toCore = (pokemon: ApiPokemon): PokemonCore => {
+  /**
+   * Read a base stat of the pokemon
+   * @param name - Name of the stat in PokeAPI
+   */
   const stat = (name: string) => pokemon.stats.find((s) => s.stat.name === name)?.base_stat ?? 0;
 
   return {
@@ -159,7 +163,10 @@ const toCore = (pokemon: ApiPokemon): PokemonCore => {
   };
 };
 
-/** Status moves have no power: they are left out, a battle only needs attacks */
+/**
+ * Adapt a PokeAPI move, or return `null` for a move without power: a battle only needs attacks
+ * @param move - Move as answered by PokeAPI
+ */
 const toMove = (move: ApiMove): Move | null =>
   move.power && move.damage_class.name !== "status"
     ? {
@@ -171,6 +178,10 @@ const toMove = (move: ApiMove): Move | null =>
       }
     : null;
 
+/**
+ * Keep what is needed of a PokeAPI type
+ * @param type - Type as answered by PokeAPI
+ */
 const toType = ({ name, damage_relations: relations, sprites }: ApiType): TypeDetails => ({
   name: name as TypeName,
   image: sprites["generation-viii"]["sword-shield"].name_icon ?? "",
@@ -179,6 +190,10 @@ const toType = ({ name, damage_relations: relations, sprites }: ApiType): TypeDe
   noDamageFrom: names(relations.no_damage_from),
 });
 
+/**
+ * Keep what is needed of a PokeAPI species
+ * @param species - Species as answered by PokeAPI
+ */
 const toSpecies = (species: ApiSpecies): Species => ({
   name: species.name,
   generation: idFromUrl(species.generation.url),
@@ -186,6 +201,10 @@ const toSpecies = (species: ApiSpecies): Species => ({
   evolutionChainUrl: species.evolution_chain.url,
 });
 
+/**
+ * Adapt a link of a PokeAPI evolution chain, and the links below it
+ * @param link - Link as answered by PokeAPI
+ */
 const toEvolutionLink = ({ species, evolves_to }: ApiChainLink): EvolutionLink => ({
   name: species.name,
   pokedexId: idFromUrl(species.url),
@@ -195,15 +214,19 @@ const toEvolutionLink = ({ species, evolves_to }: ApiChainLink): EvolutionLink =
 const cache = new Map<string, Promise<unknown>>();
 
 /**
- * Fetch a resource once and keep what `select` picks from it: PokeAPI data never changes.
+ * Fetch a PokeAPI resource once and keep what is picked from it: a failure is not kept
+ * @param url - Url of the resource
+ * @param select - Picks what to keep of the answer
  */
 function getCached<T, R>(url: string, select: (data: T) => R): Promise<R> {
+  /**
+   * Fetch the resource, and forget it when the request fails
+   */
   const load = async () => {
     try {
       const { data } = await api.get<T>(url);
       return select(data);
     } catch (error) {
-      // Do not keep a failure: the next call tries again
       cache.delete(url);
       throw error;
     }
@@ -213,9 +236,17 @@ function getCached<T, R>(url: string, select: (data: T) => R): Promise<R> {
   return cache.get(url) as Promise<R>;
 }
 
+/**
+ * Fetch what is needed of a pokemon, without its types, species and moves
+ * @param id - Pokédex id of the pokemon
+ */
 export const fetchPokemonCore = (id: number): Promise<PokemonCore> =>
   getCached(`${POKEAPI_URL}/pokemon/${id}`, toCore);
 
+/**
+ * List the types of a pokemon, main type first
+ * @param pokemon - Pokemon to read
+ */
 const typeNames = (pokemon: PokemonCore): TypeName[] => names(pokemon.types) as TypeName[];
 
 /* ------------------------------- Resistances ------------------------------ */
@@ -229,6 +260,10 @@ const DAMAGE_RELATIONS: Record<number, DamageRelation> = {
   4: DamageRelation.TwiceVulnerable,
 };
 
+/**
+ * Compute how much damage a pokemon takes from each attacking type
+ * @param types - Types of the pokemon
+ */
 const computeResistances = (types: TypeDetails[]): Resistance[] =>
   Object.values(TypeName).map((attacker) => {
     const damage_multiplier = types.reduce((multiplier, type) => {
@@ -257,10 +292,15 @@ const STRUGGLE: Move = {
 };
 
 /**
- * The strongest attacks a pokemon learns by levelling up, favouring its own types (they hit 1.5x harder)
+ * Fetch the strongest attacks a pokemon learns by levelling up, favouring its own types (they hit 1.5x harder)
+ * @param pokemon - Pokemon whose moves are fetched
  */
 async function fetchMoves(pokemon: PokemonCore): Promise<Move[]> {
   const types = typeNames(pokemon);
+  /**
+   * Rate a move by its power, raised when it is of one of the pokemon's types
+   * @param move - Move to rate
+   */
   const strength = (move: Move) => move.power * (types.includes(move.type) ? 1.5 : 1);
 
   const moves = await Promise.all(pokemon.moveUrls.map((url) => getCached(url, toMove)));
@@ -280,19 +320,26 @@ async function fetchMoves(pokemon: PokemonCore): Promise<Move[]> {
 
 /* -------------------------------- Evolutions ------------------------------ */
 
+/**
+ * Find a pokemon in an evolution chain
+ * @param link - Link the search starts from
+ * @param name - Name of the pokemon to find
+ */
 const findEvolutionLink = (link: EvolutionLink, name: string): EvolutionLink | undefined =>
   link.name === name
     ? link
     : link.evolvesTo.map((child) => findEvolutionLink(child, name)).find(Boolean);
 
-/** The species of a pokemon and what it evolves into */
+/**
+ * Fetch the species of a pokemon and what it evolves into, among the pokemon that are served
+ * @param speciesUrl - Url of the species in PokeAPI
+ */
 async function fetchLineage(speciesUrl: string) {
   const species = await getCached(speciesUrl, toSpecies);
   const chain = await getCached(
     species.evolutionChainUrl,
     ({ chain: root }: { chain: ApiChainLink }) => toEvolutionLink(root),
   );
-  // Later generations gave new evolutions to old pokemon: only the ones that are served are listed
   const evolutions: Evolution[] = (findEvolutionLink(chain, species.name)?.evolvesTo ?? [])
     .filter(({ pokedexId }) => pokedexId <= POKEMON_COUNT)
     .map(({ name, pokedexId }) => ({ name, pokedexId }));
@@ -300,9 +347,11 @@ async function fetchLineage(speciesUrl: string) {
   return { species, evolutions };
 }
 
-/* --------------------------------- Exports -------------------------------- */
-
-/** Pokedex ids in order, `limit` of them after skipping `offset`, never past the last pokemon */
+/**
+ * List pokedex ids in order, never past the last pokemon
+ * @param offset - How many pokemon to skip
+ * @param limit - How many ids to list at most
+ */
 export function pokemonIds(offset = 0, limit = POKEMON_COUNT): number[] {
   const count = Math.max(0, Math.min(limit, POKEMON_COUNT - offset));
   return Array.from({ length: count }, (_, index) => offset + index + 1);
@@ -310,6 +359,8 @@ export function pokemonIds(offset = 0, limit = POKEMON_COUNT): number[] {
 
 /**
  * Fetch one page of the pokemon list, as light summaries in pokedex order
+ * @param offset - How many pokemon to skip
+ * @param limit - How many pokemon the page holds at most
  */
 export async function fetchPokemonPage(offset: number, limit: number): Promise<PokemonPage> {
   const pokemons = await Promise.all(
@@ -331,6 +382,7 @@ export async function fetchPokemonPage(offset: number, limit: number): Promise<P
 
 /**
  * Fetch a pokemon from PokeAPI and adapt it to the legacy pokebuildapi `Pokemon` shape
+ * @param id - Pokédex id of the pokemon
  */
 export async function fetchPokemon(id: number): Promise<Pokemon> {
   const pokemon = await fetchPokemonCore(id);
@@ -356,7 +408,6 @@ export async function fetchPokemon(id: number): Promise<Pokemon> {
     resistanceModifyingAbilitiesForApi: { name: pokemon.ability, slug: pokemon.ability },
     apiEvolutions: evolutions,
     apiPreEvolution: species.preEvolution,
-    // PokeAPI does not compute ability effects on resistances
     apiResistancesWithAbilities: apiResistances,
     apiMoves,
   };

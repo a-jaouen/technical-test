@@ -1,17 +1,20 @@
-import { memo } from "react";
-
 import type { PokemonSummary } from "../types/pokemon";
 import { label } from "../utils/pokemon";
-import { TypeBadge } from "./TypeBadge";
+import { TypeBadges } from "./TypeBadges";
 
-interface CardProps {
+interface PokemonCardProps {
   pokemon: PokemonSummary;
   selected: boolean;
   onToggle: (id: number) => void;
 }
 
-/** Memoised: typing in the search bar or picking a fighter must not re-render 898 cards */
-export const Card = memo(function Card({ pokemon, selected, onToggle }: CardProps) {
+/**
+ * Card of a pokemon, clicked to pick it as a fighter
+ * @param props.pokemon - Pokemon shown
+ * @param props.selected - Whether the pokemon is picked
+ * @param props.onToggle - Called with the pokemon id when the card is clicked
+ */
+export function PokemonCard({ pokemon, selected, onToggle }: PokemonCardProps) {
   const { stats } = pokemon;
 
   return (
@@ -35,11 +38,7 @@ export const Card = memo(function Card({ pokemon, selected, onToggle }: CardProp
         height={120}
         className="aspect-square h-auto w-full max-w-30"
       />
-      <div className="flex flex-wrap justify-center gap-1">
-        {pokemon.types.map((type) => (
-          <TypeBadge key={type} type={type} />
-        ))}
-      </div>
+      <TypeBadges types={pokemon.types} />
       <dl className="w-full text-sm">
         <Stat name="HP" value={stats.HP} />
         <Stat name="Attack" value={stats.attack} />
@@ -48,8 +47,13 @@ export const Card = memo(function Card({ pokemon, selected, onToggle }: CardProp
       </dl>
     </button>
   );
-});
+}
 
+/**
+ * One line of the stats of a card
+ * @param props.name - Name of the stat
+ * @param props.value - Value of the stat
+ */
 function Stat({ name, value }: { name: string; value: number }) {
   return (
     <div className="flex justify-between gap-2">

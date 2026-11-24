@@ -3,14 +3,18 @@ import { Fragment } from "react";
 import { BattleStatus, useBattle } from "../hooks/useBattle";
 import type { PokemonSummary } from "../types/pokemon";
 import { label } from "../utils/pokemon";
-import { TypeBadge } from "./TypeBadge";
+import { TypeBadges } from "./TypeBadges";
 
 interface ArenaProps {
   fighters: PokemonSummary[];
   onClose: () => void;
 }
 
-/** Full screen view of a battle: the fighters, then the commentary as the chatbot writes it */
+/**
+ * Full screen view of a battle: the fighters, then the commentary as the chatbot writes it
+ * @param props.fighters - Pokemon fighting each other
+ * @param props.onClose - Called to go back to the list
+ */
 export function Arena({ fighters, onClose }: ArenaProps) {
   const battle = useBattle(fighters.map(({ id }) => ({ pokemonIds: [id] })));
 
@@ -40,11 +44,7 @@ export function Arena({ fighters, onClose }: ArenaProps) {
                   className="aspect-square h-auto w-full max-w-28 sm:max-w-40"
                 />
                 <span className="font-semibold">{label(fighter.name)}</span>
-                <div className="flex flex-wrap justify-center gap-1">
-                  {fighter.types.map((type) => (
-                    <TypeBadge key={type} type={type} />
-                  ))}
-                </div>
+                <TypeBadges types={fighter.types} />
               </div>
             </Fragment>
           ))}

@@ -1,10 +1,8 @@
 @import "tailwindcss";
 
-/* `dark:` utilities follow the class set by ThemeProvider instead of the system setting */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
-  /* Default border colour, light then dark (Tailwind 4 would otherwise use the text colour) */
   *,
   ::after,
   ::before,

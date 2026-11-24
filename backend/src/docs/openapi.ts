@@ -2,10 +2,6 @@ import swaggerJsdoc from "swagger-jsdoc";
 
 import { components } from "./components.ts";
 
-/**
- * OpenAPI document generated from the `@openapi` JSDoc blocks of the routes and the shared components.
- * The production build inlines the result (see rolldown.config.ts), sources are not shipped.
- */
 export const openapi = swaggerJsdoc({
   definition: {
     openapi: "3.1.0",
@@ -17,5 +13,5 @@ export const openapi = swaggerJsdoc({
     },
     components,
   },
-  apis: ["src/app.ts", "src/controllers/*.ts"],
+  apis: ["src/controllers/*.ts"],
 });

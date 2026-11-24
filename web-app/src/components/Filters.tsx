@@ -6,11 +6,17 @@ interface FiltersProps {
   onSearchChange: (search: string) => void;
   selectedTypes: TypeName[];
   onToggleType: (type: TypeName) => void;
-  /** How many pokemon match the current search and types */
   resultCount: number;
 }
 
-/** Search bar and type filters, pinned to the top of the screen while the list scrolls */
+/**
+ * Search bar and type filters, pinned to the top of the screen while the list scrolls
+ * @param props.search - Text typed in the search bar
+ * @param props.onSearchChange - Called when the text changes
+ * @param props.selectedTypes - Types the pokemon must have
+ * @param props.onToggleType - Called when a type is clicked
+ * @param props.resultCount - How many pokemon match the search and the types
+ */
 export function Filters({
   search,
   onSearchChange,
@@ -34,9 +40,8 @@ export function Filters({
             {resultCount} Pokémon
           </span>
         </div>
-        {/* One row to swipe through on phones, so the pinned bar stays short */}
         <div
-          className="-mx-4 flex [scrollbar-width:none] gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
+          className="[scrollbar-none] -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
           role="group"
           aria-label="Filter by type"
         >

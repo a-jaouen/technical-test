@@ -1,18 +1,16 @@
 import axios, { isAxiosError } from "axios";
 
-import type { BattleRequest, BattleTeam, PokemonPage } from "./types/pokemon";
+import type { BattleTeam, PokemonPage } from "./types/pokemon";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:3001",
 });
 
-/** The backend answers failures as `{ error: string }`: turn them into an Error with that message */
-async function toError(error: unknown): Promise<unknown> {
-  // No answer at all (backend down, request cancelled): nothing to read
-  if (!isAxiosError(error) || !error.response) return error;
+// A failed request is thrown as an Error carrying the message answered by the backend
+api.interceptors.response.use(undefined, async (error: unknown) => {
+  if (!isAxiosError(error) || !error.response) throw error;
 
   let body = error.response.data;
-  // A streamed request gets its error body as a stream too
   if (body instanceof ReadableStream) {
     try {
       body = await new Response(body).json();
@@ -21,13 +19,15 @@ async function toError(error: unknown): Promise<unknown> {
     }
   }
 
-  return new Error(body?.error ?? `Request failed (${error.response.status})`);
-}
-
-api.interceptors.response.use(undefined, async (error: unknown) => {
-  throw await toError(error);
+  throw new Error(body?.error ?? `Request failed (${error.response.status})`);
 });
 
+/**
+ * Fetch one page of the pokemon list
+ * @param offset - How many pokemon to skip
+ * @param limit - How many pokemon the page holds at most
+ * @param signal - Cancels the request
+ */
 export async function getPokemonPage(
   offset: number,
   limit: number,
@@ -43,12 +43,13 @@ export async function getPokemonPage(
 
 /**
  * Start a battle and yield each piece of the commentary as the backend streams it
+ * @param teams - Teams fighting each other
+ * @param signal - Cancels the battle
  */
 export async function* streamBattle(
   teams: BattleTeam[],
   signal: AbortSignal,
 ): AsyncGenerator<string> {
-  // Only axios' fetch adapter can hand over the body while it is still arriving
   const { data } = await api.post<ReadableStream<Uint8Array<ArrayBuffer>>>(
     "/battles",
     { teams },

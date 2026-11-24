@@ -1,11 +1,13 @@
+import { DEFAULT_PAGE_SIZE } from "../schemas.ts";
+import { MOVE_COUNT, POKEMON_COUNT } from "../services/pokeapi.ts";
 import {
-  DEFAULT_PAGE_SIZE,
+  DamageRelation,
   MAX_PAGE_SIZE,
+  MoveCategory,
   POKEMONS_PER_TEAM,
   TEAMS_PER_BATTLE,
-} from "../schemas.ts";
-import { POKEMON_COUNT } from "../services/pokeapi.ts";
-import { DamageRelation, MoveCategory, TypeName } from "../types/pokemon.ts";
+  TypeName,
+} from "../types/pokemon.ts";
 
 const ref = (schema: string) => ({ $ref: `#/components/schemas/${schema}` });
 
@@ -15,6 +17,7 @@ const errorResponse = (description: string) => ({
 });
 
 const typeName = { type: "string", enum: Object.values(TypeName), example: TypeName.Electric };
+const pokemonId = { type: "integer", minimum: 1, maximum: POKEMON_COUNT };
 
 /**
  * OpenAPI components shared by the routes.
@@ -27,7 +30,7 @@ export const components = {
       in: "path",
       required: true,
       description: "Pokédex id",
-      schema: { type: "integer", minimum: 1, maximum: POKEMON_COUNT, example: 25 },
+      schema: { ...pokemonId, example: 25 },
     },
     Limit: {
       name: "limit",
@@ -45,7 +48,9 @@ export const components = {
 
   responses: {
     BadRequest: errorResponse("The request is not valid, the error says what is wrong"),
-    BadGateway: errorResponse("PokeAPI or the chatbot could not be reached"),
+    InternalError: errorResponse(
+      "The request could not be served, the reason is in the server logs",
+    ),
   },
 
   schemas: {
@@ -153,7 +158,7 @@ export const components = {
         apiResistancesWithAbilities: { type: "array", items: ref("Resistance") },
         apiMoves: {
           type: "array",
-          description: "The strongest attacks learned by levelling up (6 at most)",
+          description: `The strongest attacks learned by levelling up (${MOVE_COUNT} at most)`,
           items: ref("Move"),
         },
       },
@@ -167,7 +172,7 @@ export const components = {
           description: "Pokédex ids of the team's pokemon",
           minItems: POKEMONS_PER_TEAM,
           maxItems: POKEMONS_PER_TEAM,
-          items: { type: "integer", minimum: 1, maximum: POKEMON_COUNT },
+          items: pokemonId,
         },
       },
     },
@@ -180,7 +185,7 @@ export const components = {
           description: "The teams facing each other. A pokemon can only be in one team",
           minItems: TEAMS_PER_BATTLE,
           maxItems: TEAMS_PER_BATTLE,
-          items: { $ref: "#/components/schemas/BattleTeam" },
+          items: ref("BattleTeam"),
           example: [{ pokemonIds: [25] }, { pokemonIds: [6] }],
         },
       },

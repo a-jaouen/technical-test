@@ -27,25 +27,22 @@ const BattleController = Router();
  *           text/plain:
  *             schema: { type: string }
  *       400: { $ref: "#/components/responses/BadRequest" }
- *       502: { $ref: "#/components/responses/BadGateway" }
+ *       500: { $ref: "#/components/responses/InternalError" }
  */
 BattleController.post("/", async (req: Request, res: Response) => {
   const { teams } = validate(battleSchema, req.body);
   const pokemonIds = teams.flatMap((team) => team.pokemonIds);
 
-  // Stop asking the chatbot when the user leaves the arena before the end
   const abort = new AbortController();
   res.on("close", () => abort.abort());
 
   const fighters = await Promise.all(pokemonIds.map((id) => fetchPokemonCore(id)));
-  // The user already left while the fighters were being fetched
   if (abort.signal.aborted) return;
 
   const names = fighters.map(({ name }) => name);
   const answer = askChatbot(buildBattlePrompt(names), abort.signal);
 
   try {
-    // Wait for the first chunk before committing to a 200: a chatbot failure can still be a JSON error
     let chunk = await answer.next();
     res.type("text/plain");
     while (!chunk.done) {
@@ -53,7 +50,6 @@ BattleController.post("/", async (req: Request, res: Response) => {
       chunk = await answer.next();
     }
   } catch (error) {
-    // Nobody is listening any more, there is nothing to answer
     if (abort.signal.aborted) return;
     throw error;
   }

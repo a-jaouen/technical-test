@@ -1,9 +1,13 @@
 /**
- * Pokemon types shared by the backend and the web-app.
+ * Pokemon types and API limits shared by the backend and the web-app.
  *
  * This file exists in both projects, as `backend/src/types/pokemon.ts` and
  * `web-app/src/types/pokemon.ts`: change one, then copy it over the other.
  */
+
+export const MAX_PAGE_SIZE = 100;
+export const TEAMS_PER_BATTLE = 2;
+export const POKEMONS_PER_TEAM = 1;
 
 export enum TypeName {
   Normal = "normal",
@@ -26,7 +30,6 @@ export enum TypeName {
   Fairy = "fairy",
 }
 
-/** How much damage a pokemon takes from an attacking type */
 export enum DamageRelation {
   Immune = "immune",
   TwiceResistant = "twice_resistant",
@@ -36,7 +39,6 @@ export enum DamageRelation {
   TwiceVulnerable = "twice_vulnerable",
 }
 
-/** Physical moves use Attack against Defense, special moves use Special Attack against Special Defense */
 export enum MoveCategory {
   Physical = "physical",
   Special = "special",
@@ -57,7 +59,6 @@ export interface PokemonType {
 }
 
 export interface Resistance {
-  /** The attacking type */
   name: TypeName;
   damage_multiplier: number;
   damage_relation: DamageRelation;
@@ -78,11 +79,9 @@ export interface Move {
   type: TypeName;
   category: MoveCategory;
   power: number;
-  /** `null` when the move never misses */
   accuracy: number | null;
 }
 
-/** What the grid needs, without the per-pokemon lookups (species, evolutions, moves) */
 export interface PokemonSummary {
   id: number;
   name: string;
@@ -91,10 +90,8 @@ export interface PokemonSummary {
   stats: StatBlock;
 }
 
-/** One page of the pokemon list */
 export interface PokemonPage {
   pokemons: PokemonSummary[];
-  /** How many pokemon exist in total, across all pages */
   total: number;
   limit: number;
   offset: number;
@@ -113,18 +110,15 @@ export interface Pokemon {
   apiResistances: Resistance[];
   resistanceModifyingAbilitiesForApi: Ability;
   apiEvolutions: Evolution[];
-  /** Name of the pokemon it evolves from, `none` when there is none */
   apiPreEvolution: string;
   apiResistancesWithAbilities: Resistance[];
   apiMoves: Move[];
 }
 
-/** One side of a battle */
 export interface BattleTeam {
   pokemonIds: number[];
 }
 
-/** Body of `POST /battles` */
 export interface BattleRequest {
   teams: BattleTeam[];
 }

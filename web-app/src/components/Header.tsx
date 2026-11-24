@@ -1,10 +1,12 @@
 import { IoIosMoon, IoIosSunny } from "react-icons/io";
 
-import { Theme, useTheme } from "./ThemeContext";
+import { Theme, useTheme } from "../hooks/useTheme";
 
+/**
+ * Title of the app and the light or dark mode switch
+ */
 export function Header() {
-  const { theme, toggleTheme } = useTheme();
-  const nextTheme = theme === Theme.Light ? Theme.Dark : Theme.Light;
+  const { theme, nextTheme, toggleTheme } = useTheme();
 
   return (
     <header className="flex items-center justify-between border-b px-4 py-3">

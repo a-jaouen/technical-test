@@ -1,15 +1,26 @@
-import { useCallback, useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useState } from "react";
 
 import { LoadStatus, usePokemons } from "../hooks/usePokemons";
-import type { TypeName } from "../types/pokemon";
+import { POKEMONS_PER_TEAM, TEAMS_PER_BATTLE, type TypeName } from "../types/pokemon";
 import { Arena } from "./Arena";
 import { Filters } from "./Filters";
 import { Header } from "./Header";
 import { PokemonList } from "./PokemonList";
 import { SelectionBar } from "./SelectionBar";
 
-const FIGHTERS_PER_BATTLE = 2;
+const FIGHTERS_PER_BATTLE = TEAMS_PER_BATTLE * POKEMONS_PER_TEAM;
 
+/**
+ * Add an item to a list, or remove it when it is already there
+ * @param list - List to change
+ * @param item - Item clicked
+ */
+const toggle = <T,>(list: T[], item: T): T[] =>
+  list.includes(item) ? list.filter((other) => other !== item) : [...list, item];
+
+/**
+ * The pokemon list with its filters, the picked fighters and the arena
+ */
 export function PokemonApp() {
   const { status, pokemons, total, error, retry } = usePokemons();
   const [search, setSearch] = useState("");
@@ -17,43 +28,31 @@ export function PokemonApp() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [inArena, setInArena] = useState(false);
 
-  // Filtering can mount hundreds of cards: let the search field stay responsive while it happens
   const deferredSearch = useDeferredValue(search);
 
-  const visible = useMemo(() => {
-    // Names are slugs ("mr-mime"): let "mr mime" match too
-    const query = deferredSearch.trim().toLowerCase().replaceAll(" ", "-");
-
-    return pokemons.filter(
-      (pokemon) =>
-        pokemon.name.includes(query) && selectedTypes.every((type) => pokemon.types.includes(type)),
-    );
-  }, [pokemons, deferredSearch, selectedTypes]);
-
-  const fighters = useMemo(
-    () => selectedIds.flatMap((id) => pokemons.find((pokemon) => pokemon.id === id) ?? []),
-    [pokemons, selectedIds],
+  const query = deferredSearch.trim().toLowerCase().replaceAll(" ", "-");
+  const visible = pokemons.filter(
+    (pokemon) =>
+      pokemon.name.includes(query) && selectedTypes.every((type) => pokemon.types.includes(type)),
   );
 
-  const toggleType = (type: TypeName) =>
-    setSelectedTypes((current) =>
-      current.includes(type) ? current.filter((other) => other !== type) : [...current, type],
-    );
+  const fighters = selectedIds.flatMap((id) => pokemons.find((pokemon) => pokemon.id === id) ?? []);
 
-  // Picking one more than a battle needs replaces the oldest pick
-  const toggleFighter = useCallback(
-    (id: number) =>
-      setSelectedIds((current) =>
-        current.includes(id)
-          ? current.filter((other) => other !== id)
-          : [...current, id].slice(-FIGHTERS_PER_BATTLE),
-      ),
-    [],
-  );
+  /**
+   * Add a type to the filters, or remove it
+   * @param type - Type clicked
+   */
+  const toggleType = (type: TypeName) => setSelectedTypes((current) => toggle(current, type));
+
+  /**
+   * Pick a pokemon as a fighter, or drop it: one pick too many replaces the oldest
+   * @param id - Id of the pokemon clicked
+   */
+  const toggleFighter = (id: number) =>
+    setSelectedIds((current) => toggle(current, id).slice(-FIGHTERS_PER_BATTLE));
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
-      {/* Behind the arena, the list must not be reachable with the keyboard: picking would restart the battle */}
       <div inert={inArena}>
         <Header />
         {pokemons.length > 0 && (
