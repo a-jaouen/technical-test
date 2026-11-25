@@ -18,4 +18,4 @@ npm run dev        # http://localhost:5173 (expects the backend on :3001)
 
 The backend URL defaults to `http://localhost:3001`. Set `VITE_API_URL` to point somewhere else, for example `VITE_API_URL=http://localhost:4000 npm run dev`.
 
-Docker: `docker build -t pokebattle-web . && docker run -p 8080:8080 pokebattle-web`
+Docker: `docker build -t pokebattle-web . && docker run -p 5173:5173 pokebattle-web`

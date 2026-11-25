@@ -28,7 +28,7 @@ Endpoint tests call the app over HTTP. The chatbot is stubbed, but PokeAPI is st
 
 Ids are Pokédex ids from 1 to 898. Every parameter and body is validated with Joi ([src/schemas.ts](src/schemas.ts)).
 
-`src/types/pokemon.ts` is shared with the web-app, which holds an identical copy: change one, then copy it over the other.
+`src/types/pokemon.ts` is shared with the web-app, which holds an identical copy: change one, then copy it over the other. Future work could be to use a shared types package.
 
 Environment (`.env`, loaded by `npm run dev` and `npm start`):
 
